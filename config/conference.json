@@ -1,0 +1,21 @@
+{
+  "conference": {
+    "short": "A-10",
+    "full": "Atlantic 10",
+    "standingsUrl": "https://atlantic10.com/standings.aspx?path=wvball",
+    "standingsSite": "atlantic10.com"
+  },
+  "statsPath": "/sports/womens-volleyball/stats/{season}",
+  "teams": [
+    { "id": "duq", "name": "Duquesne",          "mascot": "Dukes",           "abbr": "DUQ", "color1": "#BA0C2F", "color2": "#041E42", "site": "goduquesne.com" },
+    { "id": "gmu", "name": "George Mason",      "mascot": "Patriots",        "abbr": "GMU", "color1": "#006633", "color2": "#FFCC33", "site": "gomason.com" },
+    { "id": "day", "name": "Dayton",            "mascot": "Flyers",          "abbr": "DAY", "color1": "#CE1141", "color2": "#004B8D", "site": "daytonflyers.com" },
+    { "id": "slu", "name": "Saint Louis",       "mascot": "Billikens",       "abbr": "SLU", "color1": "#003DA5", "color2": "#C8C9C7", "site": "slubillikens.com" },
+    { "id": "gw",  "name": "George Washington", "mascot": "Revolutionaries", "abbr": "GW",  "color1": "#033C5A", "color2": "#AA9868", "site": "gwsports.com" },
+    { "id": "luc", "name": "Loyola Chicago",    "mascot": "Ramblers",        "abbr": "LUC", "color1": "#862633", "color2": "#FFB81C", "site": "loyolaramblers.com" },
+    { "id": "vcu", "name": "VCU",               "mascot": "Rams",            "abbr": "VCU", "color1": "#000000", "color2": "#FFB300", "site": "vcuathletics.com" },
+    { "id": "dav", "name": "Davidson",          "mascot": "Wildcats",        "abbr": "DAV", "color1": "#AC1A2F", "color2": "#000000", "site": "davidsonwildcats.com" },
+    { "id": "for", "name": "Fordham",           "mascot": "Rams",            "abbr": "FOR", "color1": "#860038", "color2": "#FFFFFF", "site": "fordhamsports.com" },
+    { "id": "uri", "name": "Rhode Island",      "mascot": "Rams",            "abbr": "URI", "color1": "#75B2DD", "color2": "#002147", "site": "gorhody.com" }
+  ]
+}

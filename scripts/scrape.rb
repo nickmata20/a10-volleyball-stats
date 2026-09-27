@@ -1,4 +1,5 @@
-# Nightly A-10 volleyball stats import.
+# Nightly conference volleyball stats import.
+# Conference, schools and standings page come from config/conference.json.
 # Reads each school's cumulative stats page and writes data/stats.json.
 # Usage: ruby scripts/scrape.rb [output path]    (set SEASON=2027 to override the year)
 # Handles both versions of the schools' stats platform:
@@ -8,12 +9,11 @@ require 'json'
 require 'time'
 
 SEASON = ENV['SEASON'] || Time.now.year.to_s
-SCHOOLS = {
-  'duq' => 'goduquesne.com',  'gmu' => 'gomason.com',        'day' => 'daytonflyers.com',
-  'slu' => 'slubillikens.com', 'gw' => 'gwsports.com',        'luc' => 'loyolaramblers.com',
-  'vcu' => 'vcuathletics.com', 'dav' => 'davidsonwildcats.com', 'for' => 'fordhamsports.com',
-  'uri' => 'gorhody.com'
-}
+CONFIG  = JSON.parse(File.read(File.expand_path("../config/conference.json", __dir__)))
+SCHOOLS = CONFIG["teams"].map { |t| [t["id"], t["site"]] }.to_h
+# standings rows are matched by team name (or "standingsName" when the standings page spells it differently)
+NAMES   = CONFIG["teams"].map { |t| [t["standingsName"] || t["name"], t["id"]] }.to_h
+AGENT   = "Mozilla/5.0 (#{CONFIG["conference"]["short"]} VB Stat Hub)"
 OFF = { 'SP'=>'sp','MP'=>'mp','MS'=>'ms','PTS'=>'pts','K'=>'k','E'=>'e','TA'=>'ta','PCT'=>'pct','A'=>'a','SA'=>'sa','SE'=>'se' }
 DEF = { 'SP'=>'sp','DIG'=>'dig','RE'=>'re','TA'=>'rta','Rec%'=>'recp','RE#2'=>'rta','RE#3'=>'recp','BS'=>'bs','BA'=>'ba','BLK'=>'blk','BE'=>'be','BHE'=>'bhe' }
 
@@ -25,8 +25,8 @@ def num(v)
 end
 
 def fetch(host)
-  url = "https://#{host}/sports/womens-volleyball/stats/#{SEASON}"
-  html = `curl -sL --max-time 60 -A "Mozilla/5.0 (A-10 VB Stat Hub)" "#{url}"`
+  url = "https://#{host}#{CONFIG["statsPath"].sub("{season}", SEASON)}"
+  html = `curl -sL --max-time 60 -A "#{AGENT}" "#{url}"`
   html.force_encoding('UTF-8').scrub
   [url, html]
 end
@@ -116,11 +116,9 @@ def parse_nuxt(html)
   { 'all' => build.(ind['individualStats']), 'conf' => build.(ind['individualStatsConference']) }
 end
 
-# ---------- conference standings (atlantic10.com) ----------
-NAMES = { 'Duquesne'=>'duq','George Mason'=>'gmu','Dayton'=>'day','Saint Louis'=>'slu','George Washington'=>'gw',
-          'Loyola Chicago'=>'luc','VCU'=>'vcu','Davidson'=>'dav','Fordham'=>'for','Rhode Island'=>'uri' }
+# ---------- conference standings ----------
 def standings
-  html = `curl -sL --max-time 60 -A "Mozilla/5.0 (A-10 VB Stat Hub)" "https://atlantic10.com/standings.aspx?path=wvball"`.force_encoding('UTF-8').scrub
+  html = `curl -sL --max-time 60 -A "#{AGENT}" "#{CONFIG["conference"]["standingsUrl"]}"`.force_encoding('UTF-8').scrub
   html.scan(/<tr[^>]*>(.*?)<\/tr>/m).each_with_object({}) do |(tr), h|
     cells = tr.scan(/<t[dh][^>]*>(.*?)<\/t[dh]>/m).map { |(c)| strip_tags(c) }
     id = NAMES[cells[0]] || NAMES[cells[1]] or next

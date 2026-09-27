@@ -1,19 +1,11 @@
 <script>
-/* Stats imported nightly from each school's stats page + atlantic10.com standings (see scrape.rb). */
+/* Stats imported nightly from each school's stats page + the conference standings (see scripts/scrape.rb).
+   Conference name, teams and colors come from config/conference.json. */
 const DATA=/*DATA*/;
+const CONF=/*CONFIG*/;
+const CS=CONF.conference.short, CF=CONF.conference.full;
 
-const TEAMS=[
- {id:'duq',name:'Duquesne',masc:'Dukes',abbr:'DUQ',c1:'#BA0C2F',c2:'#041E42'},
- {id:'gmu',name:'George Mason',masc:'Patriots',abbr:'GMU',c1:'#006633',c2:'#FFCC33'},
- {id:'day',name:'Dayton',masc:'Flyers',abbr:'DAY',c1:'#CE1141',c2:'#004B8D'},
- {id:'slu',name:'Saint Louis',masc:'Billikens',abbr:'SLU',c1:'#003DA5',c2:'#C8C9C7'},
- {id:'gw',name:'George Washington',masc:'Revolutionaries',abbr:'GW',c1:'#033C5A',c2:'#AA9868'},
- {id:'luc',name:'Loyola Chicago',masc:'Ramblers',abbr:'LUC',c1:'#862633',c2:'#FFB81C'},
- {id:'vcu',name:'VCU',masc:'Rams',abbr:'VCU',c1:'#000000',c2:'#FFB300'},
- {id:'dav',name:'Davidson',masc:'Wildcats',abbr:'DAV',c1:'#AC1A2F',c2:'#000000'},
- {id:'for',name:'Fordham',masc:'Rams',abbr:'FOR',c1:'#860038',c2:'#FFFFFF'},
- {id:'uri',name:'Rhode Island',masc:'Rams',abbr:'URI',c1:'#75B2DD',c2:'#002147'},
-];
+const TEAMS=CONF.teams.map(t=>({id:t.id,name:t.name,masc:t.mascot,abbr:t.abbr,c1:t.color1,c2:t.color2}));
 const TM=Object.fromEntries(TEAMS.map(t=>[t.id,t]));
 
 /* ---------- color helpers ---------- */
@@ -49,7 +41,7 @@ const f0=v=>v==null?'—':typeof v!=='number'?v:(Number.isInteger(v)?v:v.toFixed
 const ord=n=>n+(['th','st','nd','rd'][(n%100>>3^1&&n%10)]||'th');
 const sd=t=>t[S.split];               // a team's current split: {players,total,opp} or null
 const tot=t=>sd(t)?sd(t).total:{};    // team totals for current split
-const splitName=()=>S.split==='conf'?'A-10 matches only':'All matches';
+const splitName=()=>S.split==='conf'?`${CS} matches only`:'All matches';
 const fmtDate=iso=>{try{return new Date(iso).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+' ET'}catch(e){return iso||'an earlier import'}};
 const updated=fmtDate(DATA.updated);
 
@@ -132,7 +124,7 @@ function vDashboard(){
   const cols=[
     {k:'_rk',label:'#',get:()=>0},
     {k:'name',label:'Team',l:1,get:t=>t.name,fmt:(v,t)=>tlink(TM[t.id])},
-    {k:'conf',label:'A-10',get:t=>pctOf([t.cw,t.cl])*100+t.cw,fmt:(v,t)=>`${t.cw}-${t.cl}`},
+    {k:'conf',label:CS,get:t=>pctOf([t.cw,t.cl])*100+t.cw,fmt:(v,t)=>`${t.cw}-${t.cl}`},
     {k:'ovr',label:'Overall',get:t=>pctOf([t.ow,t.ol]),fmt:(v,t)=>`${t.ow}-${t.ol}`},
     {k:'strk',label:'Streak',get:t=>t.streak,fmt:v=>v},
     {k:'pct',label:'Hit%',get:t=>A(t).pct,fmt:f3,lead:1},
@@ -149,7 +141,7 @@ function vDashboard(){
     const top=qual.filter(extra||(()=>1)).sort((a,b)=>b[k]-a[k]).slice(0,5);
     return `<div class="lcat"><h3>${lab}</h3>${top.map((p,i)=>`<div class="lrow"><span class="n">${i+1}</span>${tlink(TM[p.team],false)}<button class="pname" data-go="team-${p.team}">${p.name}</button><span class="v">${fmt(p[k])}</span></div>`).join('')}</div>`;
   }).join('');
-  return header('Conference Dashboard',`All 10 Atlantic 10 programs · ${DATA.season} season`)+
+  return header('Conference Dashboard',`All ${TEAMS.length} ${CF} programs · ${DATA.season} season`)+
   `<div class="grid2">
     <section class="panel"><div class="ph"><h2>Standings</h2><span class="note">Click a team for its full stats · stats are all matches</span></div>${table('stand',cols,rows,{key:'conf',dir:'desc'})}</section>
     <section class="panel"><div class="ph"><h2>Hitting efficiency</h2><span class="note">All matches</span></div>
@@ -187,7 +179,7 @@ function vPlayers(){
     <input type="search" id="pf-q" data-pf="q" placeholder="Search player" value="${f.q}">
     <label class="chk"><input type="checkbox" id="pf-qual" data-pf="qual" ${f.qual?'checked':''}> Qualified only (60% of team sets)</label>
   </div>`;
-  return header('Player Leaders','Individual season stats for every A-10 player',splitSeg())+
+  return header('Player Leaders',`Individual season stats for every ${CS} player`,splitSeg())+
   `<section class="panel"><div class="ph">${filters}<span class="note">${rows.length} players</span></div>${table('players-'+S.side,leaderCols(S.side),rows,S.side==='off'?{key:'kps',dir:'desc'}:{key:'dps',dir:'desc'})}</section>`;
 }
 
@@ -213,9 +205,9 @@ function vTeam(id){
   const t=TM[id]; if(!t)return vDashboard();
   const x=sd(t), host=t.source?new URL(t.source).host:'';
   const body=x?`${teamStatsPanel(t,x)}${statTable(t,x,'off')}${statTable(t,x,'def')}`
-    :`<section class="panel"><div class="phase2">${S.split==='conf'?`No A-10 match stats yet for ${t.name}.`:`Stats couldn't be read from ${host} in the last refresh. They'll return after the next successful nightly import.`}</div></section>`;
+    :`<section class="panel"><div class="phase2">${S.split==='conf'?`No ${CS} match stats yet for ${t.name}.`:`Stats couldn't be read from ${host} in the last refresh. They'll return after the next successful nightly import.`}</div></section>`;
   return `<div class="band" style="${tvars(t)}"><div class="mono">${t.abbr}</div><div><h1>${t.name}</h1><div class="masc">${t.masc} · ${DATA.season} season</div></div>
-    <div class="recs"><div><b>${t.cw}-${t.cl}</b><span>A-10</span></div><div><b>${t.ow}-${t.ol}</b><span>Overall</span></div><div><b>${t.streak||'—'}</b><span>Streak</span></div><div><b>${ord(standings().indexOf(t)+1)}</b><span>Standings</span></div></div></div>
+    <div class="recs"><div><b>${t.cw}-${t.cl}</b><span>${CS}</span></div><div><b>${t.ow}-${t.ol}</b><span>Overall</span></div><div><b>${t.streak||'—'}</b><span>Streak</span></div><div><b>${ord(standings().indexOf(t)+1)}</b><span>Standings</span></div></div></div>
   <div class="top"><div class="sub">Source: <a href="${t.source}" target="_blank" rel="noopener" style="color:inherit">${host} cumulative stats</a></div><div class="ctrls">${splitSeg()}<button class="tlink" data-go="compare" data-cmp="${id}" style="font-size:12.5px;text-decoration:underline">Compare with another team →</button>${FRESH}</div></div>
   ${t.stale?`<div class="banner"><b>Not refreshed last night.</b> ${host} couldn't be read, so these are the stats from ${fmtDate(t.fetched)}. They'll update after the next successful nightly import.</div>`:''}
   <div class="stack">${body}
@@ -231,7 +223,7 @@ function vCompare(){
     return `<div class="crow"><span class="val l ${aw?'win':''}">${aw?'<span class="win-mark"></span>':''}${fmt(A[k]??null)}</span><div class="half l"><div class="fill" style="width:${Math.max(0,va)/mx*100}%;background:${barColor(a)}"></div></div><span class="lab">${lab}${low?'<small>lower is better</small>':''}</span><div class="half"><div class="fill" style="width:${Math.max(0,vb)/mx*100}%;background:${barColor(b)}"></div></div><span class="val ${bw?'win':''}">${fmt(B[k]??null)}${bw?'<span class="win-mark"></span>':''}</span></div>`}).join('');
   const lead=t=>{const ps=sd(t)?sd(t).players.filter(qualifies):[];return [['Kills / set','kps'],['Assists / set','aps'],['Digs / set','dps'],['Blocks / set','bps'],['Aces / set','sps']].map(([l,k])=>{const p=[...ps].sort((x,y)=>y[k]-x[k])[0];return p?`<div class="lrow"><span class="n"></span><span class="pos">#${p.num}</span><span>${p.name} <span style="color:var(--faint)">· ${l}</span></span><span class="v">${f2(p[k])}</span></div>`:''}).join('')};
   return header('Compare','Pick any two programs · green dot marks the better number',splitSeg())+
-  `<div class="cmphead"><div class="cside" style="${tvars(a)}">${sel(0,a.id)}<span class="cr">${a.cw}-${a.cl} A-10 · ${a.ow}-${a.ol} overall</span></div><div class="vs">VS</div><div class="cside r" style="${tvars(b)}">${sel(1,b.id)}<span class="cr">${b.cw}-${b.cl} A-10 · ${b.ow}-${b.ol} overall</span></div></div>
+  `<div class="cmphead"><div class="cside" style="${tvars(a)}">${sel(0,a.id)}<span class="cr">${a.cw}-${a.cl} ${CS} · ${a.ow}-${a.ol} overall</span></div><div class="vs">VS</div><div class="cside r" style="${tvars(b)}">${sel(1,b.id)}<span class="cr">${b.cw}-${b.cl} ${CS} · ${b.ow}-${b.ol} overall</span></div></div>
   <div class="stack"><section class="panel"><div class="ph"><h2>Head to head</h2><span class="note">${splitName()}</span></div>${rows}</section>
   <section class="panel"><div class="ph"><h2>Top performers</h2><span class="note">Qualified players only</span></div><div class="cleaders"><div>${tlink(a)}${lead(a)}</div><div>${tlink(b)}${lead(b)}</div></div></section></div>`;
 }
@@ -245,7 +237,7 @@ function render(){
   document.getElementById('teamnav').innerHTML=standings().map(t=>`<button data-go="team-${t.id}" ${r==='team-'+t.id?'aria-current="page"':''}>${badge(t)}<span>${t.name}</span><span class="rec">${t.cw}-${t.cl}</span></button>`).join('');
   const m=document.getElementById('main');
   m.innerHTML=r.startsWith('team-')?vTeam(r.slice(5)):r==='teams'?vTeams():r==='players'?vPlayers():r==='compare'?vCompare():vDashboard();
-  m.insertAdjacentHTML('beforeend',`<p class="foot">Stats come from each school's official athletics stats page; standings from atlantic10.com. Last import: ${updated}.</p>`);
+  m.insertAdjacentHTML('beforeend',`<p class="foot">Stats come from each school's official athletics stats page; standings from ${CONF.conference.standingsSite}. Last import: ${updated}.</p>`);
 }
 function go(route){S.route=route;try{history.replaceState(null,'','#'+route)}catch(e){}render();window.scrollTo(0,0)}
 document.addEventListener('click',e=>{
